@@ -8,7 +8,7 @@ Executer un script Oracle :
 ====> connect crydfr/Qual1ta1r30.@crydfrt
 
 3. Vérifier la conexion à la bonne db. Le système doit te retourner CRYDFR ou crydfr à l’exécution de la commande suivante :
-====> show user
+====> show user  
 
 4. Coller les scripts du client dans le répertoire g:\oracle
 
