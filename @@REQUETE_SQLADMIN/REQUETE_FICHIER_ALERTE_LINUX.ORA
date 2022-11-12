@@ -19,12 +19,8 @@ FICHIER ALERTE LINUX
 	> cd /oracle/admin/sap/diag/rdbms/repertoire_nom_de_la_base/repertoire_nom_de_la_base/trace
 	> pwd (pwd pour controler le répertoire sur lequel on se trouve)
 	> ls -l | grep alert
-	> mv  alert_VALPROD.log alert_VALPROD_20220404.log 
+	> mv  alert_SAP.log alert_SAP_20210906.log 
 	> ls -l | grep alert 
-
-
-chercher fichier sur la racine linux 
-	> find / -name alert_bfc.log
 
 
 je vais te dire un secret qui va te dépanner :P 

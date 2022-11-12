@@ -35,15 +35,15 @@ left outer join backupmediaset t5 on ( t3.media_set_id = t5.media_set_id )
 left outer join backupmediafamily t6 on ( t6.media_set_id = t5.media_set_id )
 where  type='D'
 and a.name=t1.name
-and backup_start_date >= '20210622'
+and backup_start_date >= GETDATE ()-1
 )
-AND a.name NOT IN ('tempdb')
-			AND a.name NOT LIKE ('%HOT')
-			AND a.name NOT LIKE ('%TST')
-			AND a.name NOT LIKE ('%PRJ')
-			AND (a.name NOT LIKE ('PFR%') OR a.name in ('PFRM4RD4','PFRM4QA3','PFRM4QA6'))
-			AND a.name NOT LIKE ('PROD001_DMS')
-			AND a.name NOT LIKE ('TRANSFERT')
+-- AND a.name NOT IN ('tempdb')
+			-- AND a.name NOT LIKE ('%HOT')
+			-- AND a.name NOT LIKE ('%TST')
+			-- AND a.name NOT LIKE ('%PRJ')
+			-- AND (a.name NOT LIKE ('PFR%') OR a.name in ('PFRM4RD4','PFRM4QA3','PFRM4QA6'))
+			-- AND a.name NOT LIKE ('PROD001_DMS')
+			-- AND a.name NOT LIKE ('TRANSFERT')
 order by 1
 
   

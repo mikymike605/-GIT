@@ -1,7 +1,23 @@
+-- 1 - Variable declaration
+DECLARE @DBName sysname
+DECLARE @DataPath nvarchar(500)
+DECLARE @DirTree TABLE (subdirectory nvarchar(255), depth INT)
+
+-- 2 - Initialize variables
+SET @DBName = 'Refresh_'+CONVERT(varchar, getdate(),112)+'_'+ LEFT (convert (varchar, getdate(),24),2)+ substring(convert (varchar, getdate(),24),4,2)+'\'
+SET @DataPath = 'G:\bases\mssql\backup\' + @DBName
+
+-- 4 - Create the @DataPath directory
+IF NOT EXISTS (SELECT 1 FROM @DirTree WHERE subdirectory = @DBName)
+EXEC master.dbo.xp_create_subdir @DataPath
+
+GO
+
+
 -------------------------
 --Databases full backup--
 ------------------------- 
-DECLARE @backupRetention int;  
+DECLARE @backupRetention int;
 DECLARE @backupFiles int;
 DECLARE @fileNumber int;
 DECLARE @FilesList varchar(4000);
@@ -13,7 +29,6 @@ DECLARE @sql VARCHAR(4096)
 DECLARE @ErrorMessage NVARCHAR(4000)
 DECLARE @cleandate varchar(25) 
 DECLARE @dt datetime 
-
 -----------------------------------------------
 --                Parameters                 --
 -----------------------------------------------
@@ -23,7 +38,7 @@ SET @backupRetention= 22;
 SET @backupFiles= 1;
 --Databases exclusion list
 INSERT INTO @databasesExclusion VALUES 
-	('ERPDIVALTO') 
+	('tempdb') 
 --	,('db2') 
 --	,('db3') 
 --	,('db4')
@@ -36,20 +51,17 @@ EXEC master.dbo.xp_instance_regread
 		'BackupDirectory',
 		@backuppath OUTPUT, 
 		'no_output'
-SET @backuppath='G:\bases\mssql\backup\Migration_20220405\'
-
+SET @backuppath=@backuppath+'\Refresh_'+  CONVERT(varchar, getdate(),112)+'_'+ LEFT (convert (varchar, getdate(),24),2)+ substring(convert (varchar, getdate(),24),4,2)+'\'
 ----drop old backup
 --SET @sql='xp_delete_file 0,'''+@backuppath+''',''bak'','''+CONVERT (varchar, DATEADD(hh, -@backupRetention, getdate()),126)+''''
 --PRINT (@sql)
 --EXEC(@sql)
---PRINT  '										'
-
+PRINT  '										'
 --Backup loop
 SELECT @db_id=MAX(database_id) FROM sys.databases
 WHILE (@db_id > 0)
 BEGIN
-	IF  (SELECT db_name(@db_id) WHERE databasepropertyex(db_name(@db_id),'Updateability')='READ_WRITE' AND  databasepropertyex(db_name(@db_id),'Status')='ONLINE'
-	AND db_name(@db_id) IN (SELECT db FROM @databasesExclusion) ) IS NOT NULL
+	IF  (SELECT db_name(@db_id) WHERE databasepropertyex(db_name(@db_id),'Updateability')='READ_WRITE' AND db_name(@db_id) NOT IN (SELECT db FROM @databasesExclusion) ) IS NOT NULL
 	BEGIN
 		PRINT '-- Base '+DB_NAME(@db_id)+'									'
 		BEGIN TRY
@@ -61,27 +73,18 @@ BEGIN
 				SET @FilesList='';
 				WHILE (@fileNumber>0)
 				BEGIN
-					SET @FilesList=@FilesList+' DISK='''+@backuppath+''''--db_name(@db_id)+'_'+@date+'_0'+cast(@fileNumber as varchar)+'.bak'',';
+					SET @FilesList=@FilesList+' DISK='''+@backuppath+db_name(@db_id)+'_'+@date+'_0'+cast(@fileNumber as varchar)+'.bak'',';
 					SET @fileNumber=@fileNumber-1;
 				END
 				SELECT @FilesList=substring(@FilesList, 1, (len(@FilesList) - 1));--remove last comma
 			END
 			ELSE 
-				SET @FilesList=' DISK='''+@backuppath+''''--db_name(@db_id)+'_'+@date+'.bak''';
-			--Backup DATABASE
-			SET @sql='BACKUP DATABASE ['+db_name(@db_id)+'] TO '+@FilesList+' WITH NO_COMPRESSION,  INIT,  NAME=''Sauvegarde full de la base '+db_name(@db_id)+''''
+				SET @FilesList=' DISK='''+@backuppath+db_name(@db_id)+'_'+@date+'.bak''';
+			--Backup
+			SET @sql='BACKUP DATABASE ['+db_name(@db_id)+'] TO '+@FilesList+' WITH COMPRESSION,  INIT,  NAME=''Sauvegarde full de la base '+db_name(@db_id)+''''
 			PRINT (@sql)
 			--EXEC (@sql)
-			--Backup LOG
-			SET @sql='BACKUP LOG ['+db_name(@db_id)+'] TO '+@FilesList+' WITH NO_COMPRESSION,  INIT,  NAME=''Sauvegarde full de la base '+db_name(@db_id)+''''
-			PRINT (@sql)
-			--EXEC (@sql)
-			--RESTORE DATABASE
-			SELECT @sql='RESTORE DATABASE ['+db_name(@db_id)+'] FROM DISK='''+@backuppath+db_name(@db_id)+'_'+@date+'.bak''  WITH  FILE = 1,  NOUNLOAD,  REPLACE,  STATS = 10' --FROM #db_list WHERE database_id=@db_id
-			PRINT (@sql)
-			--EXEC (@sql)
-			--RESTORE FILELISTONLY
-			SELECT @sql='RESTORE FILELISTONLY ['+db_name(@db_id)+'] FROM DISK='''+@backuppath+db_name(@db_id)+'_'+@date+'.bak''  WITH  FILE = 1,  NOUNLOAD,  REPLACE,  STATS = 10' --FROM #db_list WHERE database_id=@db_id
+			SELECT @sql='--RESTORE DATABASE ['+db_name(@db_id)+'] FROM DISK='''+@backuppath+db_name(@db_id)+'_'+@date+'.bak''  WITH  FILE = 1,  NOUNLOAD,  REPLACE,  STATS = 10' --FROM #db_list WHERE database_id=@db_id
 			PRINT (@sql)
 			--EXEC (@sql)
 		END TRY
@@ -93,16 +96,13 @@ BEGIN
 	END
 	SET @db_id=@db_id-1
 END
-
 IF @ErrorMessage IS NOT NULL
 BEGIN
 	RAISERROR (@ErrorMessage,16,1)
 END
-
-----History Cleanup
---SELECT @cleandate = CONVERT (varchar, DATEADD(mm, -1, getdate()),126)
---SELECT @dt = CAST(@cleandate as datetime) 
-
---EXEC msdb.dbo.sp_delete_backuphistory @dt
---EXEC msdb.dbo.sp_purge_jobhistory  @oldest_date=@cleandate
---EXEC msdb..sp_maintplan_delete_log null,null,@cleandate
+--History Cleanup
+SELECT @cleandate = CONVERT (varchar, DATEADD(mm, -1, getdate()),126)
+SELECT @dt = CAST(@cleandate as datetime) 
+EXEC msdb.dbo.sp_delete_backuphistory @dt
+EXEC msdb.dbo.sp_purge_jobhistory  @oldest_date=@cleandate
+EXEC msdb..sp_maintplan_delete_log null,null,@cleandate

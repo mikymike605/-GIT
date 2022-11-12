@@ -14,7 +14,7 @@ SELECT *
 FROM [LastRestores]
 WHERE [RowNum] = 1
 and restore_date >= getdate ()-1
-and DatabaseName ='NORMEA_SAFT_DEV'
+--and DatabaseName ='NORMEA_SAFT_DEV'
 order by restore_date desc   
 
 SELECT DatabaseName,''''+DatabaseName+'''','DB EXCLU PREDICAT'

@@ -1,1 +1,1 @@
-PsExec -s -i "D:\Program Files (x86)\Microsoft SQL server\120\Tools\Binn\ManagementStudio\Ssms.exe"
+PsExec -s -i "D:\Program Files (x86)\Microsoft SQL server\140\Tools\Binn\ManagementStudio\Ssms.exe"
